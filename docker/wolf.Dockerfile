@@ -54,6 +54,8 @@ WORKDIR /wolf
 
 ENV CCACHE_DIR=/cache/ccache
 ENV CMAKE_BUILD_DIR=/cache/cmake-build
+# Max parallel compile jobs (0 = ninja default). Lower it on memory-constrained builders.
+ARG NINJA_JOBS=0
 RUN --mount=type=cache,target=/cache/ccache \
     cmake -B$CMAKE_BUILD_DIR \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -65,8 +67,8 @@ RUN --mount=type=cache,target=/cache/ccache \
     -DBUILD_FAKE_UDEV_CLI=ON \
     -DBUILD_TESTING=OFF \
     -G Ninja && \
-    ninja -C $CMAKE_BUILD_DIR wolf && \
-    ninja -C $CMAKE_BUILD_DIR fake-udev && \
+    ninja $( [ "$NINJA_JOBS" != "0" ] && echo "-j$NINJA_JOBS" ) -C $CMAKE_BUILD_DIR wolf && \
+    ninja $( [ "$NINJA_JOBS" != "0" ] && echo "-j$NINJA_JOBS" ) -C $CMAKE_BUILD_DIR fake-udev && \
     # We have to copy out the built executables because this will only be available inside the buildkit cache
     cp $CMAKE_BUILD_DIR/src/moonlight-server/wolf /wolf/wolf && \
     cp $CMAKE_BUILD_DIR/src/fake-udev/fake-udev /wolf/fake-udev
